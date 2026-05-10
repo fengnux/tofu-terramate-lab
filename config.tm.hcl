@@ -6,7 +6,7 @@ globals "gcp" {
 
 globals "tofu" {
   required_version = ">= 1.11.0"
-  google_provider  = "~> 7.0"
+  google_provider  = "~> 7.31.0"
 }
 
 globals "labels" {
