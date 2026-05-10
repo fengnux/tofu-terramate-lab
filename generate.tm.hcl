@@ -1,0 +1,28 @@
+generate_hcl "_terramate_versions.tf" {
+  content {
+    terraform {
+      required_version = global.tofu.required_version
+
+      required_providers {
+        google = {
+          source  = "registry.opentofu.org/hashicorp/google"
+          version = global.tofu.google_provider
+        }
+      }
+    }
+  }
+}
+
+generate_hcl "_terramate_provider.tf" {
+  content {
+    provider "google" {
+      project = global.gcp.lab_project
+      region  = global.gcp.region
+
+      default_labels = {
+        managed-by  = global.labels.managed_by
+        source-repo = tm_replace(global.labels.source_repo, "/", "_")
+      }
+    }
+  }
+}

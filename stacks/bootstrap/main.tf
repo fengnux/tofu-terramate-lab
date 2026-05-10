@@ -1,26 +1,17 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "registry.opentofu.org/hashicorp/google"
-      version = "~> 6.0"
-    }
-  }
-  # Bootstrap 使用 local state（避免雞生蛋問題）
-}
-
-provider "google" {
-  project = var.project
-  region  = var.region
-}
-
 resource "google_storage_bucket" "tofu_state" {
-  name                        = var.state_bucket_name
-  project                     = var.project
-  location                    = var.region
+  name     = "research-lab-495809-tofu-state"
+  location = "asia-east1"
+
   uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = false
 
   versioning {
     enabled = true
+  }
+
+  soft_delete_policy {
+    retention_duration_seconds = 7776000 # 90 天
   }
 
   lifecycle_rule {
@@ -30,5 +21,14 @@ resource "google_storage_bucket" "tofu_state" {
     action {
       type = "Delete"
     }
+  }
+
+  labels = {
+    purpose     = "tofu-state"
+    environment = "shared"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
