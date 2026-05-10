@@ -24,8 +24,7 @@ resource "google_storage_bucket" "tofu_state" {
   }
 
   labels = {
-    purpose     = "tofu-state"
-    environment = "shared"
+    purpose = "tofu-state"
   }
 
   lifecycle {

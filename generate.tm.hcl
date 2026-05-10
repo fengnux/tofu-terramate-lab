@@ -21,7 +21,9 @@ generate_hcl "_terramate_provider.tf" {
 
       default_labels = {
         managed-by  = global.labels.managed_by
-        source-repo = tm_replace(global.labels.source_repo, "/", "_")
+        source-repo = global.labels.source_repo
+        stack       = terramate.stack.name
+        environment = tm_try(global.env.name, "shared")
       }
     }
   }

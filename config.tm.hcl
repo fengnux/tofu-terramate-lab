@@ -10,6 +10,6 @@ globals "tofu" {
 }
 
 globals "labels" {
-  managed_by = "opentofu"
-  source_repo = "fengnux/tofu-terramate-hcl"
+  managed_by  = "opentofu"
+  source_repo = "tofu-terramate-hcl"
 }

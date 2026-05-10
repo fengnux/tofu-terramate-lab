@@ -2,8 +2,10 @@
 
 provider "google" {
   default_labels = {
+    environment = "shared"
     managed-by  = "opentofu"
-    source-repo = "fengnux_tofu-terramate-hcl"
+    source-repo = "tofu-terramate-hcl"
+    stack       = "bootstrap"
   }
   project = "research-lab-495809"
   region  = "asia-east1"
