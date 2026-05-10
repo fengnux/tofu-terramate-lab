@@ -13,6 +13,17 @@ generate_hcl "_terramate_versions.tf" {
   }
 }
 
+generate_hcl "_terramate_backend.tf" {
+  content {
+    terraform {
+      backend "gcs" {
+        bucket = global.gcp.state_bucket
+        prefix = tm_trimprefix(terramate.stack.path.absolute, "/stacks/")
+      }
+    }
+  }
+}
+
 generate_hcl "_terramate_provider.tf" {
   content {
     provider "google" {
