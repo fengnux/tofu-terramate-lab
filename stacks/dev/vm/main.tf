@@ -14,8 +14,7 @@ resource "google_compute_instance" "dev_vm" {
   }
 
   network_interface {
-    network    = "dev-vpc"
-    subnetwork = "projects/${local.project_id}/regions/asia-east1/subnetworks/dev-subnet-asia-east1"
+    subnetwork = "dev-subnet-asia-east1"
     # access_config 不加 → 無 public IP
   }
 
