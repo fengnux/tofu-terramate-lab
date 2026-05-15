@@ -1,6 +1,7 @@
 locals {
   enabled_apis = [
     "compute.googleapis.com",
+    "iap.googleapis.com",
   ]
 }
 
