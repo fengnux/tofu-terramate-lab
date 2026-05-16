@@ -19,8 +19,8 @@ env:
   GCP_SERVICE_ACCOUNT: "github-actions-tofu@research-lab-495809.iam.gserviceaccount.com"
 
 jobs:
-  detect-wif-changes:
-    name: Detect WIF stack changes
+  detect-foundational-changes:
+    name: Detect foundational stack changes
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -29,19 +29,19 @@ jobs:
       - uses: terramate-io/terramate-action@v3
         with:
           version: ${{ env.TERRAMATE_VERSION }}
-      - name: Warn if WIF stack changed
+      - name: Warn if foundational stacks changed
         env:
           PUSH_CHANGE_BASE: ${{ github.event.before }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            changed=$(terramate list --changed --git-change-base="$PUSH_CHANGE_BASE" --tags wif)
+            changed=$(terramate list --changed --git-change-base="$PUSH_CHANGE_BASE" --tags foundational)
           else
-            changed=$(terramate list --changed --tags wif)
+            changed=$(terramate list --changed --tags foundational)
           fi
           if [ -n "$changed" ]; then
-            echo "::warning title=WIF stack changed::WIF stack 變更需由本機 ADC 手動 apply，CI 不會自動處理。Stacks: $changed"
+            echo "::warning title=foundational stack changed::Foundational stack（bootstrap / WIF 等）變更需由本機 ADC 手動 apply，CI 不會自動處理。Stacks: $changed"
           else
-            echo "No WIF stack changes detected."
+            echo "No foundational stack changes detected."
           fi
 
   generate-check:
@@ -79,16 +79,16 @@ jobs:
         with:
           tofu_version: ${{ env.TOFU_VERSION }}
           tofu_wrapper: false
-      - name: List changed stacks (excluding WIF)
-        run: terramate list --changed --no-tags wif
+      - name: List changed stacks (excluding foundational)
+        run: terramate list --changed --no-tags foundational
       - name: tofu fmt -check
-        run: terramate run --changed --no-tags wif -- tofu fmt -check
+        run: terramate run --changed --no-tags foundational -- tofu fmt -check
       - name: tofu init
-        run: terramate run --changed --no-tags wif -- tofu init -input=false
+        run: terramate run --changed --no-tags foundational -- tofu init -input=false
       - name: tofu validate
-        run: terramate run --changed --no-tags wif -- tofu validate
+        run: terramate run --changed --no-tags foundational -- tofu validate
       - name: tofu plan
-        run: terramate run --changed --no-tags wif -- tofu plan -input=false -lock-timeout=5m
+        run: terramate run --changed --no-tags foundational -- tofu plan -input=false -lock-timeout=5m
 
   apply:
     name: Apply changed stacks (main)
@@ -114,9 +114,9 @@ jobs:
         with:
           tofu_version: ${{ env.TOFU_VERSION }}
           tofu_wrapper: false
-      - name: List changed stacks (excluding WIF)
-        run: terramate list --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags wif
+      - name: List changed stacks (excluding foundational)
+        run: terramate list --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags foundational
       - name: tofu init
-        run: terramate run --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags wif -- tofu init -input=false
+        run: terramate run --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags foundational -- tofu init -input=false
       - name: tofu apply
-        run: terramate run --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags wif -- tofu apply -input=false -auto-approve -lock-timeout=5m
+        run: terramate run --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags foundational -- tofu apply -input=false -auto-approve -lock-timeout=5m
