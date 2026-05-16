@@ -22,3 +22,4 @@ resource "google_compute_instance" "dev_vm" {
     enable-oslogin = "TRUE"
   }
 }
+
