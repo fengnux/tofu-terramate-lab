@@ -1,3 +1,4 @@
+// Lab 04 CI verification: PR plan job dry-run
 resource "google_compute_instance" "dev_vm" {
   name         = "dev-vm"
   machine_type = "e2-micro"
