@@ -13,6 +13,11 @@ output "workload_identity_pool_name" {
   value       = google_iam_workload_identity_pool.github_actions.name
 }
 
+output "plan_service_account_email" {
+  description = "Read-only service account email for PR plan jobs"
+  value       = google_service_account.github_actions_tofu_plan.email
+}
+
 output "github_repository" {
   description = "GitHub repository allowed to impersonate the CI service account"
   value       = local.github_repo

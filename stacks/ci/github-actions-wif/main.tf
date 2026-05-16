@@ -6,7 +6,8 @@ locals {
   pool_id     = "github-actions"
   provider_id = "github"
 
-  service_account_id = "github-actions-tofu"
+  service_account_id      = "github-actions-tofu"
+  plan_service_account_id = "github-actions-tofu-plan"
 
   required_apis = [
     "cloudresourcemanager.googleapis.com",
@@ -23,6 +24,12 @@ locals {
     "roles/compute.instanceAdmin.v1",
     "roles/iap.tunnelResourceAccessor",
     "roles/iam.serviceAccountTokenCreator",
+  ]
+
+  plan_project_roles = [
+    "roles/storage.objectViewer",
+    "roles/compute.viewer",
+    "roles/serviceusage.serviceUsageViewer",
   ]
 }
 
@@ -77,10 +84,34 @@ resource "google_service_account" "github_actions_tofu" {
   ]
 }
 
+resource "google_service_account" "github_actions_tofu_plan" {
+  account_id   = local.plan_service_account_id
+  display_name = "GitHub Actions OpenTofu Plan"
+  description  = "Read-only SA for PR plan jobs via Workload Identity Federation"
+
+  depends_on = [
+    google_project_service.required["iam.googleapis.com"],
+  ]
+}
+
 resource "google_service_account_iam_member" "github_actions_wif" {
   service_account_id = google_service_account.github_actions_tofu.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/attribute.repository/${local.github_repo}"
+  member             = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/subject/repo:${local.github_repo}:ref:refs/heads/main"
+}
+
+resource "google_service_account_iam_member" "github_actions_wif_plan" {
+  service_account_id = google_service_account.github_actions_tofu_plan.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/subject/repo:${local.github_repo}:pull_request"
+}
+
+resource "google_project_iam_member" "github_actions_tofu_plan" {
+  for_each = toset(local.plan_project_roles)
+
+  project = data.google_client_config.current.project
+  role    = each.value
+  member  = google_service_account.github_actions_tofu_plan.member
 }
 
 resource "google_project_iam_member" "github_actions_tofu" {
