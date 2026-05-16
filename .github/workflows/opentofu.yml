@@ -1,0 +1,122 @@
+name: OpenTofu CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: read
+
+env:
+  TOFU_VERSION: "1.11.6"
+  TERRAMATE_VERSION: "0.17.0"
+  GCP_PROJECT_ID: "research-lab-495809"
+  GCP_WIF_PROVIDER: "projects/1074394836652/locations/global/workloadIdentityPools/github-actions/providers/github"
+  GCP_SERVICE_ACCOUNT: "github-actions-tofu@research-lab-495809.iam.gserviceaccount.com"
+
+jobs:
+  detect-wif-changes:
+    name: Detect WIF stack changes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: terramate-io/terramate-action@v3
+        with:
+          version: ${{ env.TERRAMATE_VERSION }}
+      - name: Warn if WIF stack changed
+        env:
+          PUSH_CHANGE_BASE: ${{ github.event.before }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            changed=$(terramate list --changed --git-change-base="$PUSH_CHANGE_BASE" --tags wif)
+          else
+            changed=$(terramate list --changed --tags wif)
+          fi
+          if [ -n "$changed" ]; then
+            echo "::warning title=WIF stack changed::WIF stack 變更需由本機 ADC 手動 apply，CI 不會自動處理。Stacks: $changed"
+          else
+            echo "No WIF stack changes detected."
+          fi
+
+  generate-check:
+    name: Terramate generate check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: terramate-io/terramate-action@v3
+        with:
+          version: ${{ env.TERRAMATE_VERSION }}
+      - name: terramate generate
+        run: terramate generate
+      - name: Ensure generated files are committed
+        run: git diff --exit-code
+
+  plan:
+    name: Plan changed stacks (PR)
+    if: github.event_name == 'pull_request'
+    needs: [generate-check]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+      - uses: terramate-io/terramate-action@v3
+        with:
+          version: ${{ env.TERRAMATE_VERSION }}
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+          tofu_wrapper: false
+      - name: List changed stacks (excluding WIF)
+        run: terramate list --changed --no-tags wif
+      - name: tofu fmt -check
+        run: terramate run --changed --no-tags wif -- tofu fmt -check
+      - name: tofu init
+        run: terramate run --changed --no-tags wif -- tofu init -input=false
+      - name: tofu validate
+        run: terramate run --changed --no-tags wif -- tofu validate
+      - name: tofu plan
+        run: terramate run --changed --no-tags wif -- tofu plan -input=false -lock-timeout=5m
+
+  apply:
+    name: Apply changed stacks (main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [generate-check]
+    runs-on: ubuntu-24.04
+    env:
+      PUSH_CHANGE_BASE: ${{ github.event.before }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+      - uses: terramate-io/terramate-action@v3
+        with:
+          version: ${{ env.TERRAMATE_VERSION }}
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+          tofu_wrapper: false
+      - name: List changed stacks (excluding WIF)
+        run: terramate list --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags wif
+      - name: tofu init
+        run: terramate run --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags wif -- tofu init -input=false
+      - name: tofu apply
+        run: terramate run --changed --git-change-base="$PUSH_CHANGE_BASE" --no-tags wif -- tofu apply -input=false -auto-approve -lock-timeout=5m
