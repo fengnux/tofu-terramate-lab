@@ -110,7 +110,7 @@ jobs:
             echo '```'
             echo ""
             terramate run --changed --no-tags foundational --continue-on-error -- \
-              sh -c 'printf "\n### Stack: %s\n\`\`\`hcl\n" "$(realpath --relative-to="$GITHUB_WORKSPACE" .)" && tofu plan -no-color -input=false -lock-timeout=5m; printf "\n\`\`\`\n"'
+              sh -c 'printf "\n### Stack: %s\n\`\`\`hcl\n" "$(realpath --relative-to="$GITHUB_WORKSPACE" .)" && tofu plan -no-color -input=false -lock=false; printf "\n\`\`\`\n"'
           } > ${{ runner.temp }}/plan-output.md
           if [ "$(wc -c < ${{ runner.temp }}/plan-output.md)" -gt 60000 ]; then
             head -c 60000 ${{ runner.temp }}/plan-output.md > ${{ runner.temp }}/plan-output.trunc.md
