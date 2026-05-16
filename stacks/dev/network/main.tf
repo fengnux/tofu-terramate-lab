@@ -1,4 +1,3 @@
-# lab04c: trigger plan to verify PR comment workflow
 locals {
   vpc_name    = "dev-vpc"
   subnet_name = "dev-subnet-asia-east1"
