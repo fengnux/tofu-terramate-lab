@@ -110,22 +110,22 @@ jobs:
             echo ""
             terramate run --changed --no-tags foundational --continue-on-error -- \
               sh -c 'printf "\n### Stack: %s\n\`\`\`hcl\n" "$(realpath --relative-to="$GITHUB_WORKSPACE" .)" && tofu plan -no-color -input=false -lock-timeout=5m; printf "\n\`\`\`\n"'
-          } > plan-output.md
-          if [ "$(wc -c < plan-output.md)" -gt 60000 ]; then
-            head -c 60000 plan-output.md > plan-output.trunc.md
+          } > ${{ runner.temp }}/plan-output.md
+          if [ "$(wc -c < ${{ runner.temp }}/plan-output.md)" -gt 60000 ]; then
+            head -c 60000 ${{ runner.temp }}/plan-output.md > ${{ runner.temp }}/plan-output.trunc.md
             {
               echo ""
               echo "---"
               echo "_Output truncated. See full log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}_"
-            } >> plan-output.trunc.md
-            mv plan-output.trunc.md plan-output.md
+            } >> ${{ runner.temp }}/plan-output.trunc.md
+            mv ${{ runner.temp }}/plan-output.trunc.md ${{ runner.temp }}/plan-output.md
           fi
       - name: Post plan to PR
         if: always()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: tofu-plan
-          path: plan-output.md
+          path: ${{ runner.temp }}/plan-output.md
 
   apply:
     name: Apply changed stacks (main)
