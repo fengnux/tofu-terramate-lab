@@ -62,6 +62,10 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: [generate-check]
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,8 +91,41 @@ jobs:
         run: terramate run --changed --no-tags foundational -- tofu init -input=false
       - name: tofu validate
         run: terramate run --changed --no-tags foundational -- tofu validate
-      - name: tofu plan
-        run: terramate run --changed --no-tags foundational -- tofu plan -input=false -lock-timeout=5m
+      - name: tofu plan (capture output)
+        id: plan
+        run: |
+          set -o pipefail
+          {
+            echo "## Tofu Plan Results"
+            echo ""
+            changed=$(terramate list --changed --no-tags foundational)
+            if [ -z "$changed" ]; then
+              echo "_No stacks changed in this PR._"
+              exit 0
+            fi
+            echo "Changed stacks:"
+            echo '```'
+            echo "$changed"
+            echo '```'
+            echo ""
+            terramate run --changed --no-tags foundational --continue-on-error -- \
+              sh -c 'printf "\n### Stack: %s\n\`\`\`hcl\n" "$(realpath --relative-to="$GITHUB_WORKSPACE" .)" && tofu plan -no-color -input=false -lock-timeout=5m; printf "\n\`\`\`\n"'
+          } > plan-output.md
+          if [ "$(wc -c < plan-output.md)" -gt 60000 ]; then
+            head -c 60000 plan-output.md > plan-output.trunc.md
+            {
+              echo ""
+              echo "---"
+              echo "_Output truncated. See full log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}_"
+            } >> plan-output.trunc.md
+            mv plan-output.trunc.md plan-output.md
+          fi
+      - name: Post plan to PR
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: tofu-plan
+          path: plan-output.md
 
   apply:
     name: Apply changed stacks (main)
