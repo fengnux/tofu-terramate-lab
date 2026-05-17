@@ -1,0 +1,25 @@
+# Dependabot — 每週一 06:00 UTC（台灣 14:00）掃 .github/workflows/*.yml
+# 把所有 third-party action 的 SHA 更新合併到 1 個 PR。
+# 不啟用 auto-merge：每次升版都要人工 review changelog（與 Lab 04e supply chain 防禦哲學一致）。
+# Trivy / OpenTofu / Terramate 版本以 env var pin，不在追蹤範圍 — 手動升級。
+# 參考：iac/labs/lab-04h-dependabot.md
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    groups:
+      all-actions:
+        patterns:
+          - "*"
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+    open-pull-requests-limit: 5
