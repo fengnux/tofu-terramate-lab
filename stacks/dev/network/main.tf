@@ -9,7 +9,7 @@ locals {
   cidr_pods     = "10.20.0.0/14"
   cidr_services = "10.30.0.0/20"
 
-  iap_source_range = "0.0.0.0/0"  # INTENTIONAL HIGH VIOLATION FOR LAB 04e TEST — DO NOT MERGE
+  iap_source_range = "35.235.240.0/20"
 }
 
 resource "google_compute_network" "vpc" {
@@ -71,4 +71,21 @@ resource "google_compute_router_nat" "nat" {
     enable = true
     filter = "ERRORS_ONLY"
   }
+}
+
+# ============================================================================
+# INTENTIONAL CRITICAL VIOLATION — Lab 04e Phase E.3 test, DO NOT MERGE
+# Triggers Trivy AVD-GCP-0001 (storage bucket exposed to allUsers).
+# ============================================================================
+resource "google_storage_bucket" "violation_test" {
+  name                        = "lab-04e-violation-test-DO-NOT-APPLY"
+  location                    = "asia-east1"
+  uniform_bucket_level_access = true
+  force_destroy               = false
+}
+
+resource "google_storage_bucket_iam_member" "violation_test_public" {
+  bucket = google_storage_bucket.violation_test.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
 }
