@@ -104,7 +104,9 @@ resource "google_service_account" "github_actions_tofu_plan" {
 resource "google_service_account_iam_member" "github_actions_wif" {
   service_account_id = google_service_account.github_actions_tofu.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/subject/repo:${local.github_repo}:ref:refs/heads/main"
+  # apply workflow 走 GitHub Environment "production" approval gate（Lab 04a），
+  # OIDC sub claim 為 environment 形式而非 ref，binding 需對齊
+  member = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/subject/repo:${local.github_repo}:environment:production"
 }
 
 resource "google_service_account" "github_actions_tofu_drift" {
