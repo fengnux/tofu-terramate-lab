@@ -7,7 +7,8 @@ locals {
   provider_id = "github"
 
   service_account_id      = "github-actions-tofu"
-  plan_service_account_id = "github-actions-tofu-plan"
+  plan_service_account_id  = "github-actions-tofu-plan"
+  drift_service_account_id = "github-actions-tofu-drift"
 
   required_apis = [
     "cloudresourcemanager.googleapis.com",
@@ -27,6 +28,12 @@ locals {
   ]
 
   plan_project_roles = [
+    "roles/storage.objectViewer",
+    "roles/compute.viewer",
+    "roles/serviceusage.serviceUsageViewer",
+  ]
+
+  drift_project_roles = [
     "roles/storage.objectViewer",
     "roles/compute.viewer",
     "roles/serviceusage.serviceUsageViewer",
@@ -98,6 +105,30 @@ resource "google_service_account_iam_member" "github_actions_wif" {
   service_account_id = google_service_account.github_actions_tofu.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/subject/repo:${local.github_repo}:ref:refs/heads/main"
+}
+
+resource "google_service_account" "github_actions_tofu_drift" {
+  account_id   = local.drift_service_account_id
+  display_name = "GitHub Actions OpenTofu Drift"
+  description  = "Read-only SA for scheduled drift detection via Workload Identity Federation"
+
+  depends_on = [
+    google_project_service.required["iam.googleapis.com"],
+  ]
+}
+
+resource "google_service_account_iam_member" "github_actions_wif_drift" {
+  service_account_id = google_service_account.github_actions_tofu_drift.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions.name}/subject/repo:${local.github_repo}:ref:refs/heads/main"
+}
+
+resource "google_project_iam_member" "github_actions_tofu_drift" {
+  for_each = toset(local.drift_project_roles)
+
+  project = data.google_client_config.current.project
+  role    = each.value
+  member  = google_service_account.github_actions_tofu_drift.member
 }
 
 resource "google_service_account_iam_member" "github_actions_wif_plan" {
