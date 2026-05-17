@@ -1,8 +1,8 @@
 name: Security Scan (Full Repo)
 
 on:
-  # schedule:
-  #   - cron: '0 3 * * *'   # 每天 03:00 UTC（台灣 11:00），錯開 drift 02:00
+  schedule:
+    - cron: '0 3 * * *'   # 每天 03:00 UTC（台灣 11:00），錯開 drift 02:00
   workflow_dispatch:
 
 permissions:
