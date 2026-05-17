@@ -1,0 +1,13 @@
+# Trivy IaC scan ignore list
+#
+# 格式（每條 ignore 必須附 comment）：
+#
+#   # <原因說明>
+#   # Tracking: <文件 / PR / Issue 連結>
+#   # Review: YYYY-MM-DD
+#   <CHECK-ID>
+#
+# Lab 04e Phase E 第一次 schedule scan 後，會把所有既有 HIGH/CRITICAL
+# finding 標為 "baseline (待評估)" 加進這裡，逐條評估後再移除或改 comment。
+
+# (initial empty — Phase E 後補 baseline)
