@@ -1,0 +1,112 @@
+name: Security Scan (Full Repo)
+
+on:
+  # schedule:
+  #   - cron: '0 3 * * *'   # 每天 03:00 UTC（台灣 11:00），錯開 drift 02:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+env:
+  TERRAMATE_VERSION: "0.17.0"
+  TRIVY_VERSION: "v0.70.0"
+  TRIVY_INSTALL_COMMIT: "8a3177aedf7ee0864920eb1852eef031cd3742b8"  # v0.70.0 release commit
+
+jobs:
+  scan:
+    name: Trivy IaC scan (full repo)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - uses: terramate-io/terramate-action@1cc78a548efefaab7762f4d06f51aa6de06ce201  # v3.3.0
+        with:
+          version: ${{ env.TERRAMATE_VERSION }}
+
+      - name: terramate generate
+        run: terramate generate
+
+      - name: Install Trivy
+        run: |
+          curl -sfL "https://raw.githubusercontent.com/aquasecurity/trivy/${TRIVY_INSTALL_COMMIT}/contrib/install.sh" \
+            | sh -s -- -b /usr/local/bin "${TRIVY_VERSION}"
+          trivy --version
+
+      - name: Trivy scan (HIGH/CRITICAL)
+        id: scan
+        run: |
+          set -o pipefail
+          # SARIF output
+          trivy config . \
+            --severity HIGH,CRITICAL \
+            --exit-code 0 \
+            --ignore-unfixed \
+            --ignorefile .trivyignore \
+            --skip-dirs '.terraform,.git' \
+            --format sarif \
+            --output trivy-full.sarif
+
+          # Table output 用於 Issue body
+          trivy config . \
+            --severity HIGH,CRITICAL \
+            --exit-code 0 \
+            --ignore-unfixed \
+            --ignorefile .trivyignore \
+            --skip-dirs '.terraform,.git' \
+            --format table \
+            --output trivy-summary.txt
+
+          count=$(jq '[.runs[].results[]?] | length' trivy-full.sarif)
+          echo "finding_count=$count" >> "$GITHUB_OUTPUT"
+          echo "Trivy finding count (HIGH/CRITICAL): $count"
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@458d36d7d4f47d0dd16ca424c1d3cda0060f1360  # v3.35.5
+        with:
+          sarif_file: trivy-full.sarif
+          category: trivy-iac-full
+
+      - name: Open or update GitHub Issue on findings
+        if: steps.scan.outputs.finding_count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create security-scan --color "d93f0b" \
+            --description "Trivy IaC scan findings" 2>/dev/null || true
+
+          {
+            echo "## Trivy IaC Scan Report"
+            echo ""
+            echo "**Run:** [${{ github.run_id }}]($RUN_URL) | **Time:** $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo ""
+            echo "**Finding count (HIGH/CRITICAL):** ${{ steps.scan.outputs.finding_count }}"
+            echo ""
+            echo '```'
+            cat trivy-summary.txt
+            echo '```'
+            echo ""
+            echo "Full SARIF: Security → Code scanning → category \`trivy-iac-full\`"
+          } > issue-body.md
+
+          existing=$(gh issue list --label security-scan --state open --json number -q '.[0].number')
+          if [ -n "$existing" ]; then
+            echo "Existing issue #$existing, adding comment."
+            gh issue comment "$existing" --body-file issue-body.md
+          else
+            echo "Opening new issue."
+            gh issue create \
+              --title "Security findings: $(date -u '+%Y-%m-%d')" \
+              --label security-scan \
+              --body-file issue-body.md
+          fi
+
+      - name: Fail workflow on findings
+        if: steps.scan.outputs.finding_count != '0'
+        run: |
+          echo "::error::Trivy found ${{ steps.scan.outputs.finding_count }} HIGH/CRITICAL issues. See Issue or SARIF."
+          exit 1

@@ -21,14 +21,14 @@ jobs:
     name: Detect drift in all stacks
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Create plugin cache dir
         run: |
           mkdir -p "$HOME/.terraform.d/plugin-cache"
           echo "TF_PLUGIN_CACHE_DIR=$HOME/.terraform.d/plugin-cache" >> "$GITHUB_ENV"
 
-      - uses: actions/cache@v5
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: ~/.terraform.d/plugin-cache
           key: ${{ runner.os }}-tofu-providers-${{ env.TOFU_VERSION }}-google-7.31
@@ -36,17 +36,17 @@ jobs:
             ${{ runner.os }}-tofu-providers-
 
       - id: auth
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
           service_account: ${{ env.GCP_SERVICE_ACCOUNT_DRIFT }}
 
-      - uses: terramate-io/terramate-action@v3
+      - uses: terramate-io/terramate-action@1cc78a548efefaab7762f4d06f51aa6de06ce201  # v3.3.0
         with:
           version: ${{ env.TERRAMATE_VERSION }}
 
-      - uses: opentofu/setup-opentofu@v2
+      - uses: opentofu/setup-opentofu@fc711fa910b93cba0f3fbecaafc9f42fd0c411cb  # v2.0.0
         with:
           tofu_version: ${{ env.TOFU_VERSION }}
           tofu_wrapper: false
