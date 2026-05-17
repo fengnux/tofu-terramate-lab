@@ -56,19 +56,37 @@ jobs:
 
       - name: Drift check
         id: drift
-        continue-on-error: true
         run: |
+          drift_found=false
+          error_found=false
+          report="${{ runner.temp }}/drift-report.md"
+
           {
             echo "## Drift Detection Report"
             echo ""
             echo "**Run:** ${{ github.run_id }} | **Time:** $(date -u '+%Y-%m-%d %H:%M UTC')"
             echo ""
-            terramate run --no-tags foundational --continue-on-error -- \
-              sh -c 'printf "\n### Stack: %s\n\`\`\`\n" "$(realpath --relative-to="$GITHUB_WORKSPACE" .)" && tofu plan -detailed-exitcode -no-color -input=false -lock=false; printf "\n\`\`\`\n"'
-          } > ${{ runner.temp }}/drift-report.md
+          } > "$report"
+
+          while IFS= read -r stack; do
+            printf "\n### Stack: %s\n\`\`\`\n" "$stack" >> "$report"
+            (cd "$GITHUB_WORKSPACE/$stack" && tofu plan -detailed-exitcode -no-color -input=false -lock=false) \
+              >> "$report" 2>&1
+            plan_exit=$?
+            printf "\`\`\`\n" >> "$report"
+
+            case $plan_exit in
+              0) ;;
+              2) drift_found=true ;;
+              *) error_found=true ;;
+            esac
+          done < <(terramate list --no-tags foundational)
+
+          echo "drift_found=$drift_found" >> "$GITHUB_OUTPUT"
+          echo "error_found=$error_found" >> "$GITHUB_OUTPUT"
 
       - name: Open or update GitHub Issue on drift
-        if: steps.drift.outcome == 'failure'
+        if: steps.drift.outputs.drift_found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -88,8 +106,14 @@ jobs:
               --body "$report"
           fi
 
+      - name: Fail workflow on plan error
+        if: steps.drift.outputs.error_found == 'true'
+        run: |
+          echo "::error::One or more stacks failed to plan. Check the logs above."
+          exit 1
+
       - name: Fail workflow on drift
-        if: steps.drift.outcome == 'failure'
+        if: steps.drift.outputs.drift_found == 'true'
         run: |
           echo "::error::Drift detected. See GitHub Issue for details."
           exit 1
