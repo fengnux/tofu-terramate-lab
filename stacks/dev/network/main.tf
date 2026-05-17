@@ -9,7 +9,7 @@ locals {
   cidr_pods     = "10.20.0.0/14"
   cidr_services = "10.30.0.0/20"
 
-  iap_source_range = "35.235.240.0/20"
+  iap_source_range = "0.0.0.0/0"  # INTENTIONAL HIGH VIOLATION FOR LAB 04e TEST — DO NOT MERGE
 }
 
 resource "google_compute_network" "vpc" {
