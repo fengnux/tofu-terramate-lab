@@ -70,9 +70,9 @@ jobs:
 
           while IFS= read -r stack; do
             printf "\n### Stack: %s\n\`\`\`\n" "$stack" >> "$report"
+            plan_exit=0
             (cd "$GITHUB_WORKSPACE/$stack" && tofu plan -detailed-exitcode -no-color -input=false -lock=false) \
-              >> "$report" 2>&1
-            plan_exit=$?
+              >> "$report" 2>&1 || plan_exit=$?
             printf "\`\`\`\n" >> "$report"
 
             case $plan_exit in
