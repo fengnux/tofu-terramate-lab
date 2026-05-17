@@ -1,8 +1,8 @@
 name: Drift Detection
 
 on:
-  schedule:
-    - cron: '0 2 * * *'   # 每天 02:00 UTC（台灣時間 10:00）
+  # schedule:
+  #   - cron: '0 2 * * *'   # 每天 02:00 UTC（台灣時間 10:00）
   workflow_dispatch:        # 手動觸發，方便測試
 
 permissions:
