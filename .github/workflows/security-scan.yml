@@ -43,7 +43,6 @@ jobs:
           trivy config . \
             --severity HIGH,CRITICAL \
             --exit-code 0 \
-            --ignore-unfixed \
             --ignorefile .trivyignore \
             --skip-dirs '.terraform,.git' \
             --format sarif \
@@ -53,7 +52,6 @@ jobs:
           trivy config . \
             --severity HIGH,CRITICAL \
             --exit-code 0 \
-            --ignore-unfixed \
             --ignorefile .trivyignore \
             --skip-dirs '.terraform,.git' \
             --format table \
@@ -65,7 +63,7 @@ jobs:
 
       - name: Upload SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@458d36d7d4f47d0dd16ca424c1d3cda0060f1360  # v3.35.5
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba  # v4.35.5
         with:
           sarif_file: trivy-full.sarif
           category: trivy-iac-full
