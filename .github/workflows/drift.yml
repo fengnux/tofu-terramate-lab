@@ -16,6 +16,7 @@ env:
   GCP_PROJECT_ID: "research-lab-495809"
   GCP_WIF_PROVIDER: "projects/1074394836652/locations/global/workloadIdentityPools/github-actions/providers/github"
   GCP_SERVICE_ACCOUNT_DRIFT: "github-actions-tofu-drift@research-lab-495809.iam.gserviceaccount.com"
+  TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
 
 jobs:
   drift:
@@ -23,6 +24,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create plugin cache dir
+        run: mkdir -p ~/.terraform.d/plugin-cache
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: ${{ runner.os }}-tofu-providers-${{ env.TOFU_VERSION }}-google-7.31
+          restore-keys: |
+            ${{ runner.os }}-tofu-providers-
 
       - id: auth
         uses: google-github-actions/auth@v3
