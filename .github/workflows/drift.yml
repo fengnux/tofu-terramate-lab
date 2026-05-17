@@ -16,8 +16,6 @@ env:
   GCP_PROJECT_ID: "research-lab-495809"
   GCP_WIF_PROVIDER: "projects/1074394836652/locations/global/workloadIdentityPools/github-actions/providers/github"
   GCP_SERVICE_ACCOUNT_DRIFT: "github-actions-tofu-drift@research-lab-495809.iam.gserviceaccount.com"
-  TF_PLUGIN_CACHE_DIR: ~/.terraform.d/plugin-cache
-
 jobs:
   drift:
     name: Detect drift in all stacks
@@ -26,7 +24,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Create plugin cache dir
-        run: mkdir -p ~/.terraform.d/plugin-cache
+        run: |
+          mkdir -p "$HOME/.terraform.d/plugin-cache"
+          echo "TF_PLUGIN_CACHE_DIR=$HOME/.terraform.d/plugin-cache" >> "$GITHUB_ENV"
 
       - uses: actions/cache@v4
         with:
