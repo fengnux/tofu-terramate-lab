@@ -25,18 +25,21 @@ locals {
     "roles/compute.instanceAdmin.v1",
     "roles/iap.tunnelResourceAccessor",
     "roles/iam.serviceAccountTokenCreator",
+    "roles/container.admin",
   ]
 
   plan_project_roles = [
     "roles/storage.objectViewer",
     "roles/compute.viewer",
     "roles/serviceusage.serviceUsageViewer",
+    "roles/container.viewer",
   ]
 
   drift_project_roles = [
     "roles/storage.objectViewer",
     "roles/compute.viewer",
     "roles/serviceusage.serviceUsageViewer",
+    "roles/container.viewer",
   ]
 }
 
