@@ -26,6 +26,9 @@ locals {
     "roles/iap.tunnelResourceAccessor",
     "roles/iam.serviceAccountTokenCreator",
     "roles/container.admin",
+    "roles/iam.serviceAccountAdmin",
+    "roles/resourcemanager.projectIamAdmin",
+    "roles/iam.serviceAccountUser",
   ]
 
   plan_project_roles = [
