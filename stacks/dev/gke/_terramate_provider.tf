@@ -1,0 +1,12 @@
+// TERRAMATE: GENERATED AUTOMATICALLY DO NOT EDIT
+
+provider "google" {
+  default_labels = {
+    environment = "dev"
+    managed-by  = "opentofu"
+    source-repo = "tofu-terramate-hcl"
+    stack       = "gke"
+  }
+  project = "research-lab-495809"
+  region  = "asia-east1"
+}
