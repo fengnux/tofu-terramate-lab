@@ -1,4 +1,3 @@
-# 觸發 dev/network change detection 以驗證 WIF fix（Lab 05a apply retry，2026-05-17）
 globals "network" {
   cidr_primary        = "10.10.0.0/20"
   cidr_pods           = "10.20.0.0/14"
