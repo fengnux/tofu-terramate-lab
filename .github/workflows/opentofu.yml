@@ -220,19 +220,20 @@ jobs:
           # https://github.blog/changelog/2025-07-21-code-scanning-will-stop-combining-multiple-sarif-runs-uploaded-in-the-same-sarif-file/
           # 把多檔 SARIF flatten 成單一 run：合併所有 results、依 ruleId 去重 rules。
           jq -s '
-            {
-              "$schema": .[0]."$schema",
-              version: .[0].version,
-              runs: [{
-                tool: {
-                  driver: (
-                    .[0].runs[0].tool.driver
-                    | .rules = ([.[].runs[].tool.driver.rules // [] | .[]] | unique_by(.id))
-                  )
-                },
-                results: [.[].runs[].results // [] | .[]]
-              }]
-            }
+            . as $docs
+            | {
+                "$schema": $docs[0]."$schema",
+                version: $docs[0].version,
+                runs: [{
+                  tool: {
+                    driver: (
+                      $docs[0].runs[0].tool.driver
+                      | .rules = ([$docs[].runs[].tool.driver.rules[]?] | unique_by(.id))
+                    )
+                  },
+                  results: [$docs[].runs[].results[]?]
+                }]
+              }
           ' "${files[@]}" > merged.sarif
           echo "Merged ${#files[@]} SARIF file(s) into merged.sarif (single run)"
 
