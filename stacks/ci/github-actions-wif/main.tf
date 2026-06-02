@@ -18,7 +18,9 @@ locals {
   ]
 
   ci_project_roles = [
-    "roles/storage.objectAdmin",
+    # storage.admin = objectAdmin + bucket admin + setIamPolicy；
+    # evidence-pack 需要 buckets.create / lifecycle / setIamPolicy（per audit ADR-003）
+    "roles/storage.admin",
     "roles/serviceusage.serviceUsageAdmin",
     "roles/compute.networkAdmin",
     "roles/compute.securityAdmin",
